@@ -1,4 +1,5 @@
-import java.util.*;
+//import java.util.*;
+//import javax.swing.JOptionPane;
 
 /**
  * 	Program to display and modify a simple DVD collection
@@ -7,28 +8,26 @@ import java.util.*;
 public class DVDManager {
 
 	public static void main(String[] args) {
-		DVDUserInterface dlInterface;
-		DVDCollection dl = new DVDCollection();
+		DVDUserInterface dvdInterface;
+		DVDCollection dvdCollection = new DVDCollection();
 
-		Scanner scan = new Scanner(System.in);
-
-		System.out.println("Enter name of data file to load:");
-		String filename = scan.nextLine();			
-		dl.loadData(filename);
-
-		System.out.println("Input interface type: C=Console, G=GUI");
-		String interfaceType = scan.nextLine();
-		if (interfaceType.equals("C")) {
-			dlInterface = new DVDConsoleUI(dl);
-			dlInterface.processCommands();
-		} else if (interfaceType.equals("G")) {
-			dlInterface = new DVDGUI(dl);
-			dlInterface.processCommands();
-		} else {
-			System.out.println("Unrecognized interface type. Program exiting.");
-			System.exit(0);
-		}
+//		String filename = JOptionPane.showInputDialog(
+//				null, 
+//				"Please enter a file name", 
+//				"Choose a file name", 
+//				JOptionPane.QUESTION_MESSAGE);
 		
-	}
+		// REMOVE THIS LINE AFTER TESTING !!!
+		String filename = "dvddata.txt"; // FOR TESTING
+		// REMOVE THIS LINE AFTER TESTING !!!
+		
+//		if (filename == null) {
+//			return; // canceled
+//		}
+		
+		dvdCollection.loadData(filename); // open file, load into DVDCollection
 
+		dvdInterface = new DVDGUI(dvdCollection);
+		dvdInterface.processCommands();
+	}
 }
