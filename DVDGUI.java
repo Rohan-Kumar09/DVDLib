@@ -23,7 +23,7 @@ public class DVDGUI implements DVDUserInterface {
 	public DVDGUI(DVDCollection dl) {
 		dvdlist = dl;
 	}
-		 
+
 	public void processCommands() {
 		
 		JFrame frame = new JFrame("DVD Collection");
@@ -126,15 +126,7 @@ public class DVDGUI implements DVDUserInterface {
 	
 	private void doAddOrModifyDVD(String... s) { // 0 or more Strings
 		JFrame frame = new JFrame("Add/Modify DVD");
-		frame.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
-		
-		frame.addWindowListener(new WindowAdapter() {
-			@Override
-			public void windowClosing(WindowEvent e) {
-				frame.dispose();
-				showDVDCollection();
-			}
-		});
+		frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 		
 		JPanel mainPanel = new JPanel(new BorderLayout()); // for NSEW and Center
 		JPanel topPanel = new JPanel(new GridLayout(0, 2)); // for Fields
@@ -201,13 +193,19 @@ public class DVDGUI implements DVDUserInterface {
 		});
 	}
 	
-	 private void doRemoveDVD() {
+	 private void doRemoveDVD(String... s) {
 		// Request the title
-		String title = JOptionPane.showInputDialog("Enter title");
-		if (title == null) {
-			return;		// dialog was cancelled
+		String title;
+		if (s.length == 0) {
+			title = JOptionPane.showInputDialog("Enter title");
+			if (title == null) {
+				return;		// dialog was cancelled
+			}
+			title = title.toUpperCase();
 		}
-		title = title.toUpperCase();
+		else {			
+			title = s[0];
+		}
 		// Remove the matching DVD if found
 		dvdlist.removeDVD(title);
 		// Display current collection to the console for debugging
@@ -215,6 +213,7 @@ public class DVDGUI implements DVDUserInterface {
 				"Removing: " + title,
 				"DVD Collection",
 				JOptionPane.PLAIN_MESSAGE);
+		showDVDCollection();
 	}
 	
 	private void doGetDVDsByRating() {
@@ -224,10 +223,7 @@ public class DVDGUI implements DVDUserInterface {
 			return;		// dialog was cancelled
 		}
 		rating = rating.toUpperCase();
-		JOptionPane.showMessageDialog(null,
-				"DVDs with rating " + rating + "\n" + dvdlist.getDVDsByRating(rating),
-				"DVD Collection",
-				JOptionPane.INFORMATION_MESSAGE);
+		showDVDCollection(rating);
 	}
 	
 	private void doGetTotalRunningTime() {
@@ -237,7 +233,7 @@ public class DVDGUI implements DVDUserInterface {
 				JOptionPane.INFORMATION_MESSAGE);
 	}
 	
-	private void showDVDCollection() {
+	private void showDVDCollection(String... s) {
 		
 		// text has DVD Collection's info
 		String[] text = dvdlist.toString().split("\n\n");
@@ -245,6 +241,7 @@ public class DVDGUI implements DVDUserInterface {
 		// jpgFiles has all the jpg files in current Directory
 		ArrayList<String> jpgFiles = new ArrayList<>();
 		ArrayList<JButton> buttons = new ArrayList<>(); // list of buttons
+		ArrayList<JButton> delButtons = new ArrayList<>(); // list of delButtons
 		
 		Path currentDirectory = Paths.get("."); // get the current directory
 		try (DirectoryStream<Path> stream = Files.newDirectoryStream(currentDirectory, "*.jpg")) {
@@ -258,7 +255,7 @@ public class DVDGUI implements DVDUserInterface {
 		}
 		
 		JFrame frame = new JFrame("DVD Collection");
-		
+		frame.setSize(new Dimension(800, 700));
 		JPanel mainPanel = new JPanel(); // main screen
 		mainPanel.setLayout(new BorderLayout()); // for regions NSEW and Center
 		
@@ -271,36 +268,31 @@ public class DVDGUI implements DVDUserInterface {
 		int collectionSize = Integer.valueOf(temp[2]); // numDVD = {a number}
 		
 		// gridPanel for DVD Images and information
-		JPanel gridPanel = new JPanel(new GridLayout(0, 3)); // 0 rows, 2 columns
+		JPanel gridPanel = new JPanel(new GridLayout(0, 4)); // 0 rows, 4 columns
 		gridPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10)); // padding of 10
 				
 		for (int i = 0; i < collectionSize; i++) {
 			// split info using "=" as delimiter
 			temp = text[i + 2].toString().split("="); // array starts from index 2
-			String dvdInfoString = temp[1]; // temp[1] is info after "=" sign (title, rating, runtime)
+			temp = temp[1].split("/");
 			
-			temp = temp[1].split("/"); // 0 index is title name
-			String dvdTitle = temp[0].trim();
-			String dvdRating = temp[1].trim();
-			String dvdRunTime = temp[2].trim();
+			String dvdTitle = temp[0].trim(); // 0 index is title name
+			String dvdRating = temp[1].trim(); // 1 index is rating
+			String dvdRunTime = temp[2].trim(); // 2 index is run time
 			
 			// jpgFiles are in ascending order, DVD list is also in ascending order.
 			ImageIcon imageIcon = null;
-			Boolean isDefault = true;
 			// if file name exists in jpgFiles then add it to imageIcon
-			if (i < jpgFiles.size()) {
-				for (String jpg: jpgFiles) {
-					if (jpg.toUpperCase().replaceAll("\\.JPG", "").equals(dvdTitle.toUpperCase())) {
-						imageIcon = new ImageIcon(jpg);
-						isDefault = false;
-						break;
-					}
+			for (String jpg: jpgFiles) {
+				// find the right image for each DVD.
+				if (jpg.toUpperCase().replaceAll("\\.JPG", "").equals(dvdTitle.toUpperCase())) {
+					imageIcon = new ImageIcon(jpg);
+					break;
 				}
-			} // else if file name doesn't exist give it default image
-			if (isDefault == true) {
+			}
+			if (imageIcon == null) { // if the image doesn't exist give it default image
 				imageIcon = new ImageIcon(defaultImage);
 			}
-			
 			Image image = imageIcon.getImage()
 					.getScaledInstance(100, 150, Image.SCALE_SMOOTH); // scale image, better visuals
 			ImageIcon resizedIcon = new ImageIcon(image);
@@ -308,16 +300,31 @@ public class DVDGUI implements DVDUserInterface {
 			JLabel imageLabel = new JLabel(resizedIcon);
 			
 			buttons.add(new JButton("Modify"));
-			buttons.get(i).setBackground(Color.CYAN);
+			buttons.get(i).setBackground(new Color(70, 130, 180));
+			buttons.get(i).setForeground(Color.WHITE);
 			buttons.get(i).setFont(new Font("Courier New", Font.BOLD, 20));
 			buttons.get(i).setBorder(new LineBorder(Color.BLACK, 2));
-			buttons.get(i).setPreferredSize(new Dimension(100, 50));
+			
 			buttons.get(i).addActionListener(new ActionListener() {
 				@Override
 				public void actionPerformed(ActionEvent e) {
 					doAddOrModifyDVD(dvdTitle);
-					frame.dispose(); 
+					frame.dispose();
 					// dispose this frame let add function display new frame with updated info.
+				}
+			});
+			
+			delButtons.add(new JButton("Remove"));
+			delButtons.get(i).setBackground(new Color(70, 130, 180));
+			delButtons.get(i).setForeground(Color.WHITE);
+			delButtons.get(i).setFont(new Font("Courier New", Font.BOLD, 20));
+			delButtons.get(i).setBorder(new LineBorder(Color.BLACK, 2));
+			
+			delButtons.get(i).addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					doRemoveDVD(dvdTitle);
+					frame.dispose();
 				}
 			});
 			
@@ -325,14 +332,22 @@ public class DVDGUI implements DVDUserInterface {
 					+ "<br>" + "Run Time: " + dvdRunTime;
 			JLabel dvdInfo = new JLabel("<html>" + formatedDVDInfo + "</html>");
 			
+			if (s.length != 0 && !dvdRating.equals(s[0])) {
+				// if rating function called with a parameter and the parameter equals DVD rating
+				// don't add it to the gridPanel.
+				continue; // for sorting out using the get DVD by rating function
+			}
+			
 			gridPanel.add(dvdInfo); // add info to first column
 			gridPanel.add(imageLabel); // add image to 2nd column
 			gridPanel.add(buttons.get(i)); // add button to the 3rd column
+			gridPanel.add(delButtons.get(i)); // add remove button to the 4th column
 		}
 		
 		// make the grid scroll enabled
 		JScrollPane scrollPane = new JScrollPane(gridPanel);
 		scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+		scrollPane.getVerticalScrollBar().setUnitIncrement(20); // increase scroll speed
 		
 		// Add to main panel
 		mainPanel.add(infoPanel, BorderLayout.NORTH); // Info at top
@@ -340,7 +355,6 @@ public class DVDGUI implements DVDUserInterface {
 		
 		frame.add(mainPanel);
 		frame.setLocationRelativeTo(null); // centralize the frame when shown
-		frame.pack();
 		frame.setVisible(true); // make frame visible !
 	}
 	
