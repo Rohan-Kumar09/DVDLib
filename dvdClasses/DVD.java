@@ -1,4 +1,3 @@
-
 /*
  * A self explanatory file. But just in case:
  * This file consists the class DVD. DVD objects are the contents of
@@ -9,6 +8,8 @@
  * the constructor.
  * 
  * */
+package dvdClasses;
+
 
 public class DVD {
 	// Attributes:
